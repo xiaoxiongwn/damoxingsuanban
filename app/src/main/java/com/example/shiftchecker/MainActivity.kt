@@ -156,28 +156,37 @@ fun ShiftCheckerScreen() {
             }
         }
 
-        // 基准日期选择
-        OutlinedTextField(
-            value = baseDate.format(formatter),
-            onValueChange = {},
-            readOnly = true,
-            label = { Text("基准日期（起始上班日）") },
+                // 基准日期选择
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { showBaseDatePicker = true }
-        )
+        ) {
+            OutlinedTextField(
+                value = baseDate.format(formatter),
+                onValueChange = {},
+                readOnly = true,
+                enabled = false,
+                label = { Text("基准日期（起始上班日）") },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
 
         // 查询日期选择
-        OutlinedTextField(
-            value = checkDate.format(formatter),
-            onValueChange = {},
-            readOnly = true,
-            label = { Text("选择日期") },
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { showCheckDatePicker = true }
-        )
-
+        ) {
+            OutlinedTextField(
+                value = checkDate.format(formatter),
+                onValueChange = {},
+                readOnly = true,
+                enabled = false,
+                label = { Text("选择日期") },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
         // 结果显示卡片
         Card(
             modifier = Modifier.fillMaxWidth(),
