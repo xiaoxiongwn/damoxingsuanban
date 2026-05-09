@@ -44,6 +44,7 @@ val shiftTypes = listOf(
 
 private const val PREFS_NAME = "shift_prefs"
 private const val KEY_BASE_DATE = "base_date"
+private const val KEY_SHIFT_TYPE = "shift_type"
 
 fun saveBaseDate(context: Context, date: LocalDate) {
     context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -58,11 +59,24 @@ fun loadBaseDate(context: Context): LocalDate {
     return saved?.let { LocalDate.parse(it) } ?: LocalDate.now()
 }
 
+fun saveShiftType(context: Context, shiftName: String) {
+    context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        .edit()
+        .putString(KEY_SHIFT_TYPE, shiftName)
+        .apply()
+}
+
+fun loadShiftType(context: Context): ShiftType {
+    val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    val saved = prefs.getString(KEY_SHIFT_TYPE, null)
+    return shiftTypes.find { it.name == saved } ?: shiftTypes[0]
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShiftCheckerScreen() {
     val context = LocalContext.current
-    var selectedShift by remember { mutableStateOf(shiftTypes[0]) }
+    var selectedShift by remember { mutableStateOf(loadShiftType(context)) }
     var baseDate by remember { mutableStateOf(loadBaseDate(context)) }
     var checkDate by remember { mutableStateOf(LocalDate.now()) }
     var showShiftDropdown by remember { mutableStateOf(false) }
@@ -166,6 +180,7 @@ fun ShiftCheckerScreen() {
                         text = { Text(shift.name) },
                         onClick = {
                             selectedShift = shift
+                            saveShiftType(context, shift.name)
                             showShiftDropdown = false
                         }
                     )
