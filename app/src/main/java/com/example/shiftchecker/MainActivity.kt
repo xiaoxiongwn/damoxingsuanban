@@ -1,6 +1,7 @@
 package com.example.shiftchecker
 
 import android.app.DatePickerDialog
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -41,17 +42,33 @@ val shiftTypes = listOf(
     ShiftType("上一休四", 1, 4)
 )
 
+private const val PREFS_NAME = "shift_prefs"
+private const val KEY_BASE_DATE = "base_date"
+
+fun saveBaseDate(context: Context, date: LocalDate) {
+    context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        .edit()
+        .putString(KEY_BASE_DATE, date.toString())
+        .apply()
+}
+
+fun loadBaseDate(context: Context): LocalDate {
+    val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    val saved = prefs.getString(KEY_BASE_DATE, null)
+    return saved?.let { LocalDate.parse(it) } ?: LocalDate.now()
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShiftCheckerScreen() {
+    val context = LocalContext.current
     var selectedShift by remember { mutableStateOf(shiftTypes[0]) }
-    var baseDate by remember { mutableStateOf(LocalDate.now()) }
+    var baseDate by remember { mutableStateOf(loadBaseDate(context)) }
     var checkDate by remember { mutableStateOf(LocalDate.now()) }
     var showShiftDropdown by remember { mutableStateOf(false) }
     var showBaseDatePicker by remember { mutableStateOf(false) }
     var showCheckDatePicker by remember { mutableStateOf(false) }
 
-    val context = LocalContext.current
     val formatter = DateTimeFormatter.ofPattern("yyyy年MM月dd日")
 
     fun isWorkingDay(shift: ShiftType, base: LocalDate, check: LocalDate): Boolean {
@@ -69,7 +86,6 @@ fun ShiftCheckerScreen() {
 
     val result = isWorkingDay(selectedShift, baseDate, checkDate)
 
-    // 计算下一个值班日期
     fun findNextWorkDay(shift: ShiftType, base: LocalDate, from: LocalDate): LocalDate {
         var d = from.plusDays(1)
         while (!isWorkingDay(shift, base, d)) {
@@ -80,30 +96,25 @@ fun ShiftCheckerScreen() {
 
     val nextWorkDay = findNextWorkDay(selectedShift, baseDate, checkDate)
 
-    // 基准日期选择器
     if (showBaseDatePicker) {
         DisposableEffect(Unit) {
             val dialog = DatePickerDialog(
                 context,
                 { _, year, month, dayOfMonth ->
                     baseDate = LocalDate.of(year, month + 1, dayOfMonth)
+                    saveBaseDate(context, baseDate)
                     showBaseDatePicker = false
                 },
                 baseDate.year,
                 baseDate.monthValue - 1,
                 baseDate.dayOfMonth
             )
-            dialog.setOnDismissListener {
-                showBaseDatePicker = false
-            }
+            dialog.setOnDismissListener { showBaseDatePicker = false }
             dialog.show()
-            onDispose {
-                if (dialog.isShowing) dialog.dismiss()
-            }
+            onDispose { if (dialog.isShowing) dialog.dismiss() }
         }
     }
 
-    // 查询日期选择器
     if (showCheckDatePicker) {
         DisposableEffect(Unit) {
             val dialog = DatePickerDialog(
@@ -116,13 +127,9 @@ fun ShiftCheckerScreen() {
                 checkDate.monthValue - 1,
                 checkDate.dayOfMonth
             )
-            dialog.setOnDismissListener {
-                showCheckDatePicker = false
-            }
+            dialog.setOnDismissListener { showCheckDatePicker = false }
             dialog.show()
-            onDispose {
-                if (dialog.isShowing) dialog.dismiss()
-            }
+            onDispose { if (dialog.isShowing) dialog.dismiss() }
         }
     }
 
@@ -138,7 +145,6 @@ fun ShiftCheckerScreen() {
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
 
-        // 值班类型选择
         ExposedDropdownMenuBox(
             expanded = showShiftDropdown,
             onExpandedChange = { showShiftDropdown = it }
@@ -167,7 +173,6 @@ fun ShiftCheckerScreen() {
             }
         }
 
-        // 基准日期选择
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -183,7 +188,6 @@ fun ShiftCheckerScreen() {
             )
         }
 
-        // 查询日期选择
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -199,7 +203,6 @@ fun ShiftCheckerScreen() {
             )
         }
 
-        // 结果显示卡片
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
@@ -234,7 +237,6 @@ fun ShiftCheckerScreen() {
             }
         }
 
-        // 说明文字
         Text(
             text = "计算规则：${selectedShift.name} = 上${selectedShift.workDays}天，休${selectedShift.restDays}天\n以基准日期为第1个上班日进行循环",
             style = MaterialTheme.typography.bodySmall,
